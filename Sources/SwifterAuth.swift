@@ -88,14 +88,19 @@ public extension Swifter {
             NotificationCenter.default.addObserver(forName: .swifterCallback, object: nil, queue: .main) { notification in
                 NotificationCenter.default.removeObserver(self)
                 presenting?.presentedViewController?.dismiss(animated: true, completion: nil)
-                let url = notification.userInfo![CallbackNotification.optionsURLKey] as! URL
+                let url = notification.userInfo?[CallbackNotification.optionsURLKey] as? URL
                 
-                let parameters = url.query!.queryStringParameters
-                requestToken.verifier = parameters["oauth_verifier"]
+                let parameters = url?.query?.queryStringParameters
+                requestToken.verifier = parameters?["oauth_verifier"]
                 
                 self.postOAuthAccessToken(with: requestToken, success: { accessToken, response in
-                    self.client.credential = Credential(accessToken: accessToken!)
-                    success?(accessToken!, response)
+                  guard let accessToken = accessToken else {
+                        let error = SwifterError.init(message: "", kind: .badOAuthResponse)
+                        failure?(error)
+                        return
+                    }
+                    self.client.credential = Credential(accessToken: accessToken)
+                    success?(accessToken, response)
                     }, failure: failure)
             }
 			
